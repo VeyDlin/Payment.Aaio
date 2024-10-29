@@ -1,14 +1,11 @@
-﻿using System.Security.Cryptography;
-using System.Text;
-using Microsoft.AspNetCore.WebUtilities;
-using Newtonsoft.Json;
-using Payment.Aaio.Types;
+﻿using Payment.Aaio.Types;
 
 namespace Payment.Aaio;
 
 
 public class AaioMerchant {
     private AaioClient aaio;
+    public PaymentWaiter waiter { get; private set; }
     public string merchantId { get; private set; }
     public string secretKey1 { get; private set; }
     public string? secretKey2 { get; private set; }
@@ -20,6 +17,8 @@ public class AaioMerchant {
         this.merchantId = merchantId;
         this.secretKey1 = secretKey1;
         this.secretKey2 = secretKey2;
+
+        waiter = new(this);
     }
 
 
@@ -28,10 +27,6 @@ public class AaioMerchant {
     public string CreatePayment(PaymentParameters parameters) => aaio.CreatePayment(merchantId, parameters, secretKey1);
 
     public Task<PaymentInfo> GetPaymentInfoAsync(string orderId) => aaio.GetPaymentInfoAsync(merchantId, orderId);
-
-    public Task<PaymentInfo> WaitPaymentAsync(string orderId, int? timeoutSec = null, CancellationTokenSource? cts = null) {
-        return aaio.WaitPaymentAsync(merchantId, orderId, timeoutSec, cts);
-    }
 
     public bool IsValidPayment(PaymentWebhookData payment) {
         if (secretKey2 is null) {

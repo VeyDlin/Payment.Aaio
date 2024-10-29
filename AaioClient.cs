@@ -1,8 +1,8 @@
-﻿using System.Security.Cryptography;
-using System.Text;
-using Microsoft.AspNetCore.WebUtilities;
+﻿using Microsoft.AspNetCore.WebUtilities;
 using Newtonsoft.Json;
 using Payment.Aaio.Types;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace Payment.Aaio;
 
@@ -17,7 +17,7 @@ public class AaioClient {
     public AaioClient(string apiKey) {
         this.apiKey = apiKey;
 
-        client = new HttpClient { 
+        client = new HttpClient {
             BaseAddress = new Uri(baseUrl)
         };
         client.DefaultRequestHeaders.Add("Accept", "application/json");
@@ -27,7 +27,7 @@ public class AaioClient {
 
 
     public AaioMerchant CreateMerchant(string merchantId, string secretKey1, string? secretKey2 = null) => new(this, merchantId, secretKey1, secretKey2);
- 
+
 
     public Task<PaymentMethods> GetPaymentMethodsAsync(string merchantId) {
         return CreateRequestAsync<PaymentMethods>("/api/methods-pay", new() {
@@ -77,11 +77,6 @@ public class AaioClient {
     }
 
 
-    public Task<PaymentInfo> WaitPaymentAsync(string merchantId, string orderId, int? timeoutSec = null, CancellationTokenSource? cts = null) {
-        return PullingWaitAsync(() => GetPaymentInfoAsync(merchantId, orderId), x => !x.IsInProcess(), timeoutSec, cts);
-    }
-
-
     public Task<Balance> GetBalancesAsync() {
         return CreateRequestAsync<Balance>("/api/balance");
     }
@@ -126,41 +121,6 @@ public class AaioClient {
     }
 
 
-    public Task<PayoffInfo> WaitPayoffAsync(string? payoffId = null, string? aaioId = null, int? timeoutSec = null, CancellationTokenSource? cts = null) {
-        return PullingWaitAsync(() => GetPayoffInfoAsync(payoffId, aaioId), x => !x.IsInProcess(), timeoutSec, cts);
-    }
-
-
-
-
-
-    public async Task<T> PullingWaitAsync<T>(Func<Task<T>> pullCall, Func<T, bool> condition, int? timeoutSec = null, CancellationTokenSource? cts = null) {
-        var timeout = timeoutSec ?? 60 * 10;
-        cts ??= new CancellationTokenSource();
-        var delay = 1000;
-        var startTime = DateTime.UtcNow;
-
-        do {
-            if ((DateTime.UtcNow - startTime).TotalSeconds > timeout) {
-                throw new TimeoutException();
-            }
-
-            await Task.Delay(delay, cts.Token);
-
-            var result = await pullCall();
-            if (condition(result)) {
-                return result;
-            }
-
-            delay *= 2;
-        } while (!cts.Token.IsCancellationRequested);
-
-        cts.Token.ThrowIfCancellationRequested();
-        return default!;
-
-    }
-
-
 
 
 
@@ -177,7 +137,7 @@ public class AaioClient {
             throw new Exception($"AAIO returns code {responseObject.code} with \"{responseObject.message}\"");
         }
 
-        return JsonConvert.DeserializeObject<T>(json)!;     
+        return JsonConvert.DeserializeObject<T>(json)!;
     }
 
 
